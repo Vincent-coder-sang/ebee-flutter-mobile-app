@@ -1,5 +1,3 @@
-// app/modules/checkout/views/checkout_view.dart
-import 'package:ebee/app/data/models/address_model.dart';
 import 'package:ebee/app/data/models/cart_model.dart';
 import 'package:ebee/app/modules/checkout/controllers/checkout_controller.dart';
 import 'package:ebee/app/modules/payments/views/payment_view.dart';
@@ -18,13 +16,9 @@ class CheckoutView extends StatelessWidget {
         title: const Text('Checkout'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => _showExitConfirmation(),
+          onPressed: _showExitConfirmation,
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.bug_report, color: Colors.orange),
-            onPressed: controller.debugCheckoutState,
-          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: controller.refreshCheckoutData,
@@ -36,8 +30,6 @@ class CheckoutView extends StatelessWidget {
         ],
       ),
       body: Obx(() {
-        print('🔄 CheckoutView - isLoading: ${controller.isLoading.value}');
-
         if (controller.isLoading.value) {
           return _buildLoadingState();
         }
@@ -51,6 +43,7 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
   Widget _buildLoadingState() {
     return const Center(
       child: Column(
@@ -94,6 +87,7 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
   Widget _buildCheckoutContent(CheckoutController controller) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -110,6 +104,7 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
   Widget _buildOrderSummary(CheckoutController controller) {
     return Card(
       elevation: 2,
@@ -204,15 +199,18 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
   Widget _buildAddressSection(CheckoutController controller) {
     if (controller.addresses.isEmpty) {
-      return _buildNoAddresses(controller);
+      return ElevatedButton(
+        onPressed: () => Get.toNamed('/add-address'),
+        child: const Text('Add Delivery Address'),
+      );
     }
-    return _buildSelectedAddress(controller);
-  }
 
-  Widget _buildSelectedAddress(CheckoutController controller) {
-    final address = controller.selectedAddress.value!;
+    final address = controller.selectedAddress.value;
+    if (address == null) return const SizedBox();
+
     return ListTile(
       leading: const Icon(Icons.location_on, color: Colors.green),
       title: Text(address.county),
@@ -224,15 +222,11 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
-  Widget _buildNoAddresses(CheckoutController controller) {
-    return ElevatedButton(
-      onPressed: () => Get.toNamed('/add-address'),
-      child: const Text('Add Delivery Address'),
-    );
-  }
-
+  // ---------------------------------------------------------------------------
   Widget _buildPaymentSection(CheckoutController controller) {
-    if (controller.selectedAddress.value == null) return const SizedBox();
+    if (controller.selectedAddress.value == null) {
+      return const SizedBox();
+    }
 
     return Column(
       children: [
@@ -257,6 +251,7 @@ class CheckoutView extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
   Future<void> _proceedToPayment(CheckoutController controller) async {
     final orderId = await controller.createOrder();
     if (orderId != null) {
@@ -267,6 +262,7 @@ class CheckoutView extends StatelessWidget {
     }
   }
 
+  // ---------------------------------------------------------------------------
   void _showExitConfirmation() {
     Get.defaultDialog(
       title: 'Leave Checkout?',

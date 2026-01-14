@@ -9,8 +9,8 @@ class Service {
   final String description;
   final double price;
   final String? userId;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final List<Booking>? bookings;
 
   Service({
@@ -19,8 +19,8 @@ class Service {
     required this.description,
     required this.price,
     this.userId,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
     this.bookings,
   });
 
@@ -31,8 +31,12 @@ class Service {
       description: json['description'] ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       userId: json['userId']?.toString(),
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'])
+          : null,
       bookings: (json['bookings'] as List?)
           ?.map((e) => Booking.fromJson(e))
           .toList(),
@@ -47,8 +51,8 @@ class Booking {
   final String? assignedTo;
   final BookingStatus status;
   final String? notes;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   Booking({
     required this.id,
@@ -57,8 +61,8 @@ class Booking {
     this.assignedTo,
     required this.status,
     this.notes,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -72,8 +76,12 @@ class Booking {
         orElse: () => BookingStatus.pending,
       ),
       notes: json['notes'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'])
+          : null,
     );
   }
 }

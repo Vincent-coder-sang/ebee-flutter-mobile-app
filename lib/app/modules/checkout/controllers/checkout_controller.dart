@@ -1,20 +1,16 @@
-// app/modules/checkout/controllers/checkout_controller.dart
 import 'package:ebee/app/data/models/address_model.dart';
 import 'package:ebee/app/data/models/cart_model.dart';
 import 'package:ebee/app/data/repositories/address_repository.dart';
 import 'package:ebee/app/data/repositories/order_repository.dart';
 import 'package:ebee/app/modules/cart/controllers/cart_controller.dart';
-import 'package:ebee/app/modules/orders/controllers/order_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class CheckoutController extends GetxController {
   final CartController _cartController = Get.find<CartController>();
-  final OrderController _orderController = Get.find<OrderController>();
   final AddressRepository _addressRepo = Get.find<AddressRepository>();
   final OrderRepository _orderRepo = Get.find<OrderRepository>();
 
-  // 🔑 FIX: start as FALSE
   final isLoading = false.obs;
   final isProcessingOrder = false.obs;
   final hasError = false.obs;
@@ -43,69 +39,65 @@ class CheckoutController extends GetxController {
     initializeCheckout();
   }
 
+  // ---------------------------------------------------------------------------
+  // INITIALIZE CHECKOUT
+  // ---------------------------------------------------------------------------
+
   Future<void> initializeCheckout() async {
     if (isLoading.value) return;
 
+    isLoading.value = true;
+    hasError.value = false;
+    errorMessage.value = '';
+
     try {
-      isLoading.value = true;
-      hasError.value = false;
-      errorMessage.value = '';
+      await _cartController.loadCart();
+      cart = _cartController.cart.value;
 
-      print('🛒 CheckoutController.initializeCheckout()');
+      if (cart == null) {
+        throw Exception('Cart not found');
+      }
 
-      await Future.wait([_loadCartItems(), _loadAddresses()]);
+      cartItems.assignAll(cart!.cartItems ?? []);
+      totalPrice.value = cart!.totalPrice ?? 0.0;
 
-      _selectDefaultAddress();
+      final userAddresses = await _addressRepo.getAddresses();
+      addresses.assignAll(userAddresses);
+
+      if (addresses.isNotEmpty) {
+        selectedAddress.value =
+            addresses.firstWhereOrNull((a) => a.isDefault) ?? addresses.first;
+      }
     } catch (e) {
-      print('❌ Checkout init error: $e');
       hasError.value = true;
       errorMessage.value = 'Failed to load checkout data';
     } finally {
       isLoading.value = false;
-      debugCheckoutState();
     }
   }
 
-  Future<void> _loadCartItems() async {
-    print('🛒 Loading cart items...');
-    await _cartController.loadCart();
-
-    cart = _cartController.cart.value;
-
-    if (cart != null && cart!.cartItems != null) {
-      cartItems.assignAll(cart!.cartItems!);
-
-      totalPrice.value = cartItems.fold(
-        0.0,
-        (sum, item) => sum + item.quantity * (item.product?.price ?? 0),
-      );
-    }
-
-    print('✅ Cart items loaded: ${cartItems.length}');
-  }
-
-  Future<void> _loadAddresses() async {
-    print('🏠 Loading addresses...');
-    final userAddresses = await _addressRepo.getAddresses();
-    addresses.assignAll(userAddresses);
-    print('✅ Addresses loaded: ${addresses.length}');
-  }
-
-  void _selectDefaultAddress() {
-    if (addresses.isEmpty) return;
-
-    selectedAddress.value =
-        addresses.firstWhereOrNull((a) => a.isDefault) ?? addresses.first;
-
-    print('📍 Selected address: ${selectedAddress.value?.postalCode}');
-  }
+  // ---------------------------------------------------------------------------
+  // ADDRESS
+  // ---------------------------------------------------------------------------
 
   void selectAddress(UserAddress address) {
     selectedAddress.value = address;
   }
 
+  // ---------------------------------------------------------------------------
+  // CREATE ORDER
+  // ---------------------------------------------------------------------------
+
   Future<String?> createOrder() async {
-    if (cart == null || selectedAddress.value == null) return null;
+    if (cart == null || cartItems.isEmpty) {
+      _showError('Your cart is empty');
+      return null;
+    }
+
+    if (selectedAddress.value == null) {
+      _showError('Please select a delivery address');
+      return null;
+    }
 
     try {
       isProcessingOrder.value = true;
@@ -115,22 +107,38 @@ class CheckoutController extends GetxController {
         userAddressId: selectedAddress.value!.id.toString(),
       );
 
-      await _clearCartAfterOrder();
+      _clearCartAfterOrder();
       return order.id;
     } catch (e) {
-      Get.snackbar(
-        'Order Failed',
-        e.toString(),
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _showError(e.toString());
       return null;
     } finally {
       isProcessingOrder.value = false;
     }
   }
 
-  Future<void> _clearCartAfterOrder() async {
+  // ---------------------------------------------------------------------------
+  // PUBLIC DEBUG (KEEP ONLY THIS ONE)
+  // ---------------------------------------------------------------------------
+
+  void debugLoadingIssue() {
+    debugPrint('''
+🧪 CHECKOUT DEBUG
+- isLoading: ${isLoading.value}
+- cartItems: ${cartItems.length}
+- totalPrice: ${totalPrice.value}
+- addresses: ${addresses.length}
+- selectedAddress: ${selectedAddress.value?.postalCode}
+- acceptTerms: ${acceptTerms.value}
+- canPlaceOrder: $canPlaceOrder
+''');
+  }
+
+  // ---------------------------------------------------------------------------
+  // HELPERS
+  // ---------------------------------------------------------------------------
+
+  void _clearCartAfterOrder() {
     _cartController.clearLocalCart();
     cartItems.clear();
     totalPrice.value = 0.0;
@@ -141,29 +149,13 @@ class CheckoutController extends GetxController {
     await initializeCheckout();
   }
 
-  void debugLoadingIssue() {
-    debugPrint('🧪 ===== CHECKOUT LOADING DEBUG =====');
-    debugPrint('isLoading: ${isLoading.value}');
-    debugPrint('hasError: ${hasError.value}');
-    debugPrint('errorMessage: ${errorMessage.value}');
-    debugPrint('cartItems count: ${cartItems.length}');
-    debugPrint('addresses count: ${addresses.length}');
-    debugPrint('selectedAddress: ${selectedAddress.value}');
-    debugPrint('totalPrice: ${totalPrice.value}');
-    debugPrint('acceptTerms: ${acceptTerms.value}');
-    debugPrint('isCheckoutReady: $isCheckoutReady');
-    debugPrint('===================================');
-  }
-
-  void debugCheckoutState() {
-    print('''
-🔍 CHECKOUT DEBUG
-- isLoading: ${isLoading.value}
-- cartItems: ${cartItems.length}
-- totalPrice: ${totalPrice.value}
-- addresses: ${addresses.length}
-- selectedAddress: ${selectedAddress.value?.postalCode}
-- canPlaceOrder: $canPlaceOrder
-''');
+  void _showError(String message) {
+    Get.snackbar(
+      'Checkout Error',
+      message,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 }

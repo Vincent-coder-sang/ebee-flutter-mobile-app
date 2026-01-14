@@ -6,25 +6,22 @@ import '../../../data/repositories/service_repository.dart';
 class ServiceController extends GetxController {
   final ServiceRepository _serviceRepository = Get.find<ServiceRepository>();
 
-  // UI state
   final isLoading = false.obs;
 
-  // Data
   final services = <Service>[].obs;
   final bookings = <Booking>[].obs;
 
-  // 🔥 REQUIRED FOR SERVICE DETAIL VIEW
   final selectedService = Rxn<Service>();
 
   @override
   void onInit() {
     super.onInit();
-    getServices();
+    fetchServices();
   }
 
   // ================== SERVICES ==================
 
-  Future<void> getServices() async {
+  Future<void> fetchServices() async {
     try {
       isLoading.value = true;
       final result = await _serviceRepository.getServices();
@@ -36,13 +33,13 @@ class ServiceController extends GetxController {
     }
   }
 
-  // 🔥 REQUIRED METHOD (WAS MISSING)
-  Future<void> getServiceById(String serviceId) async {
+  Future<void> fetchServiceById(String serviceId) async {
     try {
       isLoading.value = true;
-      final service = await _serviceRepository.getServiceById(serviceId);
-      selectedService.value = service;
-    } catch (e) {
+      selectedService.value = await _serviceRepository.getServiceById(
+        serviceId,
+      );
+    } catch (_) {
       selectedService.value = null;
       Get.snackbar('Error', 'Failed to load service');
     } finally {
@@ -52,12 +49,12 @@ class ServiceController extends GetxController {
 
   // ================== BOOKINGS ==================
 
-  Future<void> getBookings() async {
+  Future<void> fetchBookings() async {
     try {
       isLoading.value = true;
       final result = await _serviceRepository.getBookings();
       bookings.assignAll(result);
-    } catch (e) {
+    } catch (_) {
       Get.snackbar('Error', 'Failed to load bookings');
     } finally {
       isLoading.value = false;

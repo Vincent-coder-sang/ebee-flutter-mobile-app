@@ -154,11 +154,10 @@ class PaymentView extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       if (phone.length != 10) {
-                        Get.snackbar(
+                        _showSnackbar(
                           'Invalid Number',
                           'Enter a valid phone number',
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
+                          Colors.red,
                         );
                         return;
                       }
@@ -190,26 +189,15 @@ class PaymentView extends StatelessWidget {
     Get.back(); // close loading dialog
 
     if (response['success'] != true) {
-      Get.snackbar(
+      _showSnackbar(
         'Payment Failed',
         response['message'] ?? 'Unable to initiate payment',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        Colors.red,
       );
       return;
     }
 
-    final String? checkoutRequestId = response['checkoutRequestId'];
-
-    if (checkoutRequestId == null) {
-      Get.snackbar(
-        'Payment Error',
-        'Invalid payment reference received',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      return;
-    }
+    final checkoutRequestId = response['checkoutRequestId'];
 
     _showBlockingDialog(
       'Waiting for M-Pesa confirmation...\nEnter your PIN on your phone',
@@ -217,7 +205,7 @@ class PaymentView extends StatelessWidget {
 
     final confirmed = await controller.checkPaymentStatus(checkoutRequestId);
 
-    Get.back(); // close waiting dialog
+    Get.back();
 
     if (confirmed) {
       Get.offAll(
@@ -228,11 +216,10 @@ class PaymentView extends StatelessWidget {
         ),
       );
     } else {
-      Get.snackbar(
+      _showSnackbar(
         'Payment Pending',
         'Payment was not completed',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
+        Colors.orange,
       );
     }
   }
@@ -253,11 +240,20 @@ class PaymentView extends StatelessWidget {
           ),
         ),
       ),
-      barrierDismissible: false, // ✅ CORRECT PLACE
+      barrierDismissible: false, // ✅ FIXED LOCATION
     );
   }
 
-  // ---------------------------------------------------------------------------
+  void _showSnackbar(String title, String message, Color color) {
+    Get.snackbar(
+      title,
+      message,
+      backgroundColor: color,
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
   String _formatPhone(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
     if (digits.startsWith('07')) return '254${digits.substring(1)}';
@@ -265,15 +261,9 @@ class PaymentView extends StatelessWidget {
     return '254$digits';
   }
 
-  // ---------------------------------------------------------------------------
   void _confirmExit(PaymentController controller) {
     if (controller.isLoading.value) {
-      Get.snackbar(
-        'Please wait',
-        'Payment is in progress',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
+      _showSnackbar('Please wait', 'Payment is in progress', Colors.orange);
       return;
     }
 
@@ -295,7 +285,6 @@ class PaymentView extends StatelessWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
   Widget _helpText() {
     return const Padding(
       padding: EdgeInsets.only(top: 16),

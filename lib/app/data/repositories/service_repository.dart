@@ -9,18 +9,18 @@ class ServiceRepository {
 
   Future<List<Service>> getServices() async {
     final res = await _api.get(ApiEndpoints.allServices);
-    final list = res['services'] ?? res['data'] ?? [];
-    return List<Service>.from(list.map(Service.fromJson));
+    final list = res['data'] as List? ?? [];
+    return list.map((e) => Service.fromJson(e)).toList();
   }
 
   Future<Service> getServiceById(String id) async {
     final res = await _api.get('${ApiEndpoints.getService}/$id');
-    return Service.fromJson(res['service'] ?? res['data'] ?? res);
+    return Service.fromJson(res['data']);
   }
 
   Future<Service> createService(Map<String, dynamic> data) async {
     final res = await _api.post(ApiEndpoints.createService, data);
-    return Service.fromJson(res['service'] ?? res['data'] ?? res);
+    return Service.fromJson(res['data']);
   }
 
   Future<void> deleteService(String id) async {
@@ -29,12 +29,12 @@ class ServiceRepository {
 
   Future<List<Booking>> getBookings() async {
     final res = await _api.get(ApiEndpoints.getBookings);
-    final list = res['bookings'] ?? res['data'] ?? [];
-    return List<Booking>.from(list.map(Booking.fromJson));
+    final list = res['data'] as List? ?? [];
+    return list.map((e) => Booking.fromJson(e)).toList();
   }
 
   Future<Booking> createBooking(Map<String, dynamic> data) async {
     final res = await _api.post(ApiEndpoints.createBooking, data);
-    return Booking.fromJson(res['booking'] ?? res['data'] ?? res);
+    return Booking.fromJson(res['data']);
   }
 }

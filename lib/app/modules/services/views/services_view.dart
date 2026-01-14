@@ -15,14 +15,35 @@ class ServicesView extends GetView<ServiceController> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        return ListView.builder(
+        if (controller.services.isEmpty) {
+          return const Center(
+            child: Text(
+              'No services available',
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
           itemCount: controller.services.length,
+          separatorBuilder: (_, __) => const Divider(),
           itemBuilder: (_, i) {
             final service = controller.services[i];
             return ListTile(
               title: Text(service.name),
-              subtitle: Text(service.description),
-              trailing: Text('\$${service.price}'),
+              subtitle: Text(
+                service.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: Text(
+                'KES ${service.price.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
             );
           },
         );

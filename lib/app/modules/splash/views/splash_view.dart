@@ -7,9 +7,6 @@ class SplashView extends GetView<SplashController> {
 
   @override
   Widget build(BuildContext context) {
-    // This ensures the controller is initialized and available
-    Get.find<SplashController>();
-
     return Scaffold(
       backgroundColor: Colors.blue,
       body: Center(
@@ -27,7 +24,7 @@ class SplashView extends GetView<SplashController> {
               ),
             ),
             const SizedBox(height: 10),
-            Text(
+            const Text(
               'Welcome!',
               style: TextStyle(fontSize: 16, color: Colors.white),
             ),
@@ -40,7 +37,7 @@ class SplashView extends GetView<SplashController> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Screen: ${MediaQuery.of(context).size.width}x${MediaQuery.of(context).size.height}',
+              'Screen: ${MediaQuery.of(context).size.width.toInt()}x${MediaQuery.of(context).size.height.toInt()}',
               style: const TextStyle(fontSize: 12, color: Colors.white),
             ),
           ],
